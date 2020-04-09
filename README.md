@@ -1,6 +1,8 @@
 # PHP Enum implementation (Java-like) for php7.4+
 
 [![Build Status](https://travis-ci.com/PaLabs/php-enum.svg?branch=master)](https://travis-ci.com/PaLabs/php-enum.svg?branch=master)
+[![Latest Stable Version](https://poser.pugx.org/palabs/php-enum/v/stable)](https://packagist.org/packages/palabs/php-enum)
+[![License](https://poser.pugx.org/palabs/php-enum/license)](https://packagist.org/packages/palabs/php-enum)
 
 ## Benefits
 - Type-hint: `function someAction(Action $action) {`
