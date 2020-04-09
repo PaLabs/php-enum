@@ -1,5 +1,7 @@
 # PHP Enum implementation (Java-like) for php7.4+
 
+[![Build Status](https://travis-ci.com/PaLabs/php-enum.svg?branch=master)](https://travis-ci.com/PaLabs/php-enum.svg?branch=master)
+
 ## Benefits
 - Type-hint: `function someAction(Action $action) {`
 - No magick methods or phpdoc comments, only raw enum values
