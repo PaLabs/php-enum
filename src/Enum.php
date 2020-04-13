@@ -73,39 +73,37 @@ class Enum
             return;
         }
         static::initValues();
-        static::initEmptyValues($class);
+
+        $properties = self::properties($class);
+        static::initEmptyValues($className, $properties);
 
         self::$values[$className] = [];
         self::$valueMap[$className] = [];
 
         /** @var Enum[] $enumFields */
-        $properties = $class->getStaticProperties();
-        $enumFields = array_filter($properties, fn($property) => $property instanceof Enum);
-        if (count($enumFields) == 0) {
-            throw new Exception(sprintf("Enum has not values, enum=%s", $className));
-        }
 
-        foreach ($enumFields as $property) {
-            if (array_key_exists($property->name(), self::$valueMap[$className])) {
-                throw new Exception(sprintf("Duplicate enum value %s from enum %s", $property->name(), $className));
+        foreach ($properties as $propertyName) {
+            if (array_key_exists($propertyName, self::$valueMap[$className])) {
+                throw new Exception(sprintf("Duplicate enum value %s from enum %s", $propertyName, $className));
             }
 
-            self::$values[$className][] = $property;
-            self::$valueMap[$className][$property->name()] = $property;
+            $propertyValue = $className::$$propertyName;
+            self::$values[$className][] = $propertyValue;
+            self::$valueMap[$className][$propertyName] = $propertyValue;
         }
     }
 
-    private static function initEmptyValues(ReflectionClass $class): void
+    private static function initEmptyValues(string $className, array $properties): void
     {
-        $properties = self::properties($class);
-
         foreach ($properties as $idx => $name) {
-            $enumValue = $class->getStaticPropertyValue($name);
-            if (!isset($enumValue)) {
+            if(!isset($className::$$name)) {
                 /** @var Enum $enumValue */
-                $enumValue = $class->newInstance();
-                $class->setStaticPropertyValue($name, $enumValue);
+                $enumValue = new $className();
+                $className::$$name = $enumValue;
+            } else {
+                $enumValue = $className::$$name;
             }
+
             $enumValue->name = $name;
             $enumValue->ordinal = $idx;
         }
