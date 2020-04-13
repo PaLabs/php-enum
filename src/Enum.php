@@ -35,6 +35,10 @@ class Enum
         return $this === $other;
     }
 
+    protected static function initValues(): void {
+        // method can be overrided
+    }
+
     /**
      * @return Enum[]
      * @throws Exception
@@ -66,9 +70,10 @@ class Enum
         $class = new ReflectionClass($className);
 
         if (array_key_exists($className, self::$values)) {
-            throw new Exception(sprintf("Enum has been already initialized, enum=%s", $className));
+            return;
         }
-        static::initValues($class);
+        static::initValues();
+        static::initEmptyValues($class);
 
         self::$values[$className] = [];
         self::$valueMap[$className] = [];
@@ -90,7 +95,7 @@ class Enum
         }
     }
 
-    private static function initValues(ReflectionClass $class): void
+    private static function initEmptyValues(ReflectionClass $class): void
     {
         $properties = self::properties($class);
 

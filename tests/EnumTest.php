@@ -3,6 +3,8 @@
 namespace PaLabs\Tests\Enum;
 
 use Exception;
+use PaLabs\Tests\Enum\Fixtures\ActionEnum;
+use PaLabs\Tests\Enum\Fixtures\OperationEnum;
 use PHPUnit\Framework\TestCase;
 
 class EnumTest extends TestCase

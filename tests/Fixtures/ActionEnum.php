@@ -1,7 +1,7 @@
 <?php
 
 
-namespace PaLabs\Tests\Enum;
+namespace PaLabs\Tests\Enum\Fixtures;
 
 
 use PaLabs\Enum\Enum;

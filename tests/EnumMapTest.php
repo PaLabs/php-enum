@@ -6,6 +6,7 @@ namespace PaLabs\Tests\Enum;
 
 use OutOfBoundsException;
 use PaLabs\Enum\EnumMap;
+use PaLabs\Tests\Enum\Fixtures\ActionEnum;
 use PHPUnit\Framework\TestCase;
 
 class EnumMapTest extends TestCase
