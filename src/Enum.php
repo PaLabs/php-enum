@@ -67,22 +67,20 @@ class Enum
     public static function init(): void
     {
         $className = get_called_class();
-        $class = new ReflectionClass($className);
 
         if (array_key_exists($className, self::$values)) {
             return;
         }
         static::initValues();
 
-        $properties = self::properties($class);
-        static::initEmptyValues($className, $properties);
+        $properties = self::properties($className);
+        self::initEmptyValues($properties);
 
         self::$values[$className] = [];
         self::$valueMap[$className] = [];
 
-        /** @var Enum[] $enumFields */
-
-        foreach ($properties as $propertyName) {
+        // dont need declaring classes here -- we are filling only values of current class
+        foreach ($properties as [ $_, $propertyName ]) {
             if (array_key_exists($propertyName, self::$valueMap[$className])) {
                 throw new Exception(sprintf("Duplicate enum value %s from enum %s", $propertyName, $className));
             }
@@ -93,9 +91,11 @@ class Enum
         }
     }
 
-    private static function initEmptyValues(string $className, array $properties): void
+    private static function initEmptyValues(array $properties): void
     {
-        foreach ($properties as $idx => $name) {
+        // className here is a declaring class of a property
+        // Properties of parent classes should be instances of those parent classes.
+        foreach ($properties as $idx => [ $className, $name ]) {
             if(!isset($className::$$name)) {
                 /** @var Enum $enumValue */
                 $enumValue = new $className();
@@ -109,31 +109,54 @@ class Enum
         }
     }
 
-    private static function properties(ReflectionClass $class): array
+    private static function properties($className)
     {
-        $shortClass = $class->getShortName();
-        $fileContent = file_get_contents($class->getFileName());
+        // array of lists of properties of each class in hierarchy
+        $enumValues = [];
+        // array of classes in hierarchy from current to parents to root
+        $classHierarchy = [];
 
-        // use regexp to extract public static properties with type of enum class name
-        // [\s]+? - any space (including \n symbol), ? - lazy qualifier
-        $pattern = "/public[\s]+?static[\s]+?".$shortClass."[\s]+?([^;]+?);/i";
-        preg_match_all($pattern, $fileContent, $matches);
-        if(count($matches) < 2) {
-            return [];
+        $class = new ReflectionClass($className);
+        $properties = $class->getProperties(\ReflectionProperty::IS_STATIC | \ReflectionProperty::IS_PUBLIC);
+        foreach ($properties as $property) {
+            $type = $property->getType();
+
+            if (!$type instanceof \ReflectionNamedType) {
+                continue;
+            }
+
+            $matched = false;
+            if ($type->getName() === $class->getName()) {
+                $matched = true;
+            } else if ($type->getName() === 'self' || $type->getName() === 'parent') {
+                // valid as of https://wiki.php.net/rfc/typed_properties_v2
+                $matched = true;
+            } else if (class_exists($type->getName()) && is_subclass_of($class->getName(), $type->getName())) {
+                $matched = true;
+            }
+
+            if ($matched) {
+                // Properties in ReflectionClass->getProperties are sorted by declaring class.
+                // While iterating, when we see a new declaring class, we add it to the end of the list.
+                $declaringClassName = $property->getDeclaringClass()->getName();
+                if (!isset($enumValues[$declaringClassName])) {
+                    $enumValues[$declaringClassName] = [];
+                    $classHierarchy[] = $declaringClassName;
+                }
+                $enumValues[$declaringClassName][] = $property->getName();
+            }
         }
 
-        $allFields = [];
-        foreach($matches[1] as $fieldsStr) {
-            $fields = explode(',', $fieldsStr);
-            $fields = array_map('trim', $fields);
-            $fields = array_map(
-                fn(string $fieldName) => substr($fieldName, 1),
-                $fields
-            );
-            $allFields = array_merge($allFields, $fields);
+        // Now we transform collected structure into a plain list of [ declaring-class, property-name ]
+        // where properties from top-most parent class go first, next down the hierarchy to the current class
+        // The ordering is important for setting `ordinal` numbers later.
+        $plainList = [];
+        foreach (array_reverse($classHierarchy) as $declaringClassName) {
+            foreach ($enumValues[$declaringClassName] as $value) {
+                $plainList[] = [ $declaringClassName, $value ];
+            }
         }
 
-        return $allFields;
+        return $plainList;
     }
-
 }
